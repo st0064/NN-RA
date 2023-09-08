@@ -8,7 +8,7 @@ $$f(x_1,x_2) = x_2 sin(x_1) - x_1 cos(x_2)$$
 where $x_1$ and $x_2$ are two inputs between -5.0 and 5.0. 
 The following is the plot of the function:
 
-![Plot](https://gitlab.surrey.ac.uk/cf0014/ffnn/-/blob/main/sample_plot.png)
+![Plot](https://gitlab.surrey.ac.uk/cf0014/ffnn/-/raw/main/sample_plot.png)
 
 
 ## The dataset
