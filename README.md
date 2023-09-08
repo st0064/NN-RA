@@ -40,3 +40,32 @@ Run the code using the following command. By default, the program will read the 
 python ffnn.py
 ```
 
+## FFNN Design
+
+The following is the default FFNN design in the code:
+
+```python
+    model = Sequential()
+    model.add(Dense(units=6, activation='relu', input_dim=len(X_train.columns)))
+    model.add(Dense(units=12, activation='tanh'))
+    model.add(Dense(units=1))
+    model.compile(loss='mean_squared_error', optimizer='sgd')
+    model.fit(X_train, y_train, batch_size=50, epochs=200)
+```
+
+We have 5000 instances in our dataset, 80% (or 4000) are used for training. Since each batch size is 50, the FFNN will be updated 80 times for each epoch. The final few epochs show:
+
+```
+...
+Epoch 197/200
+80/80 [==============================] - 0s 657us/step - loss: 0.2446
+Epoch 198/200
+80/80 [==============================] - 0s 646us/step - loss: 0.2423
+Epoch 199/200
+80/80 [==============================] - 0s 624us/step - loss: 0.2428
+Epoch 200/200
+80/80 [==============================] - 0s 639us/step - loss: 0.2383
+```
+
+![Plot](https://gitlab.surrey.ac.uk/cf0014/ffnn/-/raw/main/ffnn.png)
+
