@@ -42,9 +42,9 @@ The models have been trained and organized by UE and MCS. For UE1, the trained m
 
 You can easily upload these trained models into your program and conduct testing with your dataset. Additionally, if needed, you have the option to re-train the models. To use a specific model, simply set the following line in the "ffnn.py" file, for example, to utilize the 27th model for MCS27 in UE1:
 
-Line 21: to_train = False                                 # don't re-train, use the saved model
-Line 22: #to_train = True                                 # train the model again 
-Line 40: model = load_model('27_model')                   # load the model from the given folder
+    Line 21: to_train = False                                 # don't re-train, use the saved model
+    Line 22: #to_train = True                                 # train the model again 
+    Line 40: model = load_model('27_model')                   # load the model from the given folder
 
 ## Test the model for unkown input for each MCS
 You have the flexibility to test each individual model with unknown CSI data. The program already contains the necessary CSI information. Specifically, for testing MCS27 in UE1, the test data is readily available:
