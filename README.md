@@ -1,15 +1,14 @@
 # Feed-Forward Neural Network (FFNN) for Rate Adaption 
 
 ## Introduction
-We have trained the NN model based on the MU-MIMO simulator to predict the effective rate according to CSIs values. The scenario is based on 4 UE and trained 28 models per UE.
+
+We've utilized the MU-MIMO simulator to train a neural network (NN) model for predicting effective rates based on CSI values. This training scenario involves four user equipment (UE) and a total of 28 models trained for each UE.
 
 ## The dataset
 
-The data set of per UE MCS wise is already given. For UE1 total 28 MCS data set are provided and name of files are: 1_MCS.csv,2_MCS.csv, 3_MCS.csv,.......,28_MCS.csv.
-For UE2, 28 MCS data set provided and names are: 1_MCS_UE2, 2_MCS_UE2, 3_MCS_UE2, .........., 28_MCS_UE2
+The dataset for each UE, organized by MCS, has been provided. For UE1, there are a total of 28 MCS datasets with file names ranging from "1_MCS.csv" to "28_MCS.csv." Similarly, for UE2, another 28 MCS datasets are available with file names from "1_MCS_UE2.csv" to "28_MCS_UE2.csv."
 
-The data sets are ready to use. The csv file will be loaded in the program for training and testing.
-
+These datasets are prepared and ready for use. You can load the CSV files into your program for both training and testing purposes.
 
 ## Setup environment
 
@@ -38,26 +37,24 @@ The program has 3 run modes:
     mode 2: train the model but don't save it
     mode 3: (default) load the saved model from the folder
 
-The model name UE and MCS wise are already trained and provided. The trained model names for UE1 MCS wise are:1_model, 2_model, 3_model,...........,28_model
-The trained model names for UE2 MCS wise are:1_model_UE2, 2_model_UE2, 3_model_UE2,...........,28_model_UE2
+The models have been trained and organized by UE and MCS. For UE1, the trained model names for each MCS range from "1_model" to "28_model." Similarly, for UE2, the model names follow the pattern "1_model_UE2" to "28_model_UE2."
 
-You can upload the model in the program and test the model with your data set. You can also re-train the model. To use the available model just set the below line in the ffnn.py (for example to use UE1 for MCS27 27_model) :
-Line 21: to_train = False # don't re-train, use the saved model
-Line 22: #to_train = True # train the model again 
-Line 40: model = load_model('27_model') # load the model from the given folder
+You can easily upload these trained models into your program and conduct testing with your dataset. Additionally, if needed, you have the option to re-train the models. To use a specific model, simply set the following line in the "ffnn.py" file, for example, to utilize the 27th model for MCS27 in UE1:
+
+Line 21: to_train = False                                 # don't re-train, use the saved model
+Line 22: #to_train = True                                 # train the model again 
+Line 40: model = load_model('27_model')                   # load the model from the given folder
 
 ## Test the model for unkown input for each MCS
-You can test the individual model for unknown CSI. For this, the CSI information is already given in the program. for UE1 MCS27 the test data is:
+You have the flexibility to test each individual model with unknown CSI data. The program already contains the necessary CSI information. Specifically, for testing MCS27 in UE1, the test data is readily available:
 
 test_data_27 = [333.804, -6.844, 279.694, -5.928, 278.983, -5.378, 279.736, -5.775, 279.396, -5.938, 281.006, -7.159, 280.36, -6.508, 280.37, -6.1, 279.431, -6.948, 279.886, -6.126, 385.678, -6.494, 355.335, -6.159, 355.107, -5.67, 354.769, -6.049, 354.718, -6.05, 356.267, -6.83, 355.849, -6.267, 354.985, -5.656, 354.566, -6.131, 355.128, -5.95, 659.8, -5.62, 635.616, -5.623, 633.958, -6.875, 635.382, -6.263, 634.566, -6.571, 635.057, -5.867, 635.147, -5.866, 635.68, -6.201, 633.101, -5.99, 634.328, -7.234, 385.21, -5.519, 355.791, -5.847, 354.511, -6.245, 355.218, -6.635, 354.606, -6.485, 355.416, -6.049, 355.296, -6.188, 355.276, -5.946, 353.031, -5.335, 354.573, -6.523]
 
-Similarly, for UE2 MCS28 you can use test_data_28_UE2.
+In a similar manner, for MCS28 in UE2, you can employ the "test_data_28_UE2."
 
-Use the function to make predictions. For UE1 MCS27 use- 
+To make predictions, use the following function:
     predicted_output = function_to_predict(test_data_27)
 
-The function will predict the effective rate based on the trained 27_MCS model.
+This function utilizes the trained "27_MCS" model to predict the effective rate. To assess accuracy, we've already furnished the actual effective rate for "test_data_27." Now, you can compare the predicted effective rate with the actual effective rate to validate the model.
 
-To check the accuracy we already provided the actual effective rate for the test_data_27. Now, you can compare the predicted effective rate and actual effective rate to validate the model. 
-
-print("Actual value MCS 27: 5040.64")
+Here's the provided actual value for MCS 27: 5040.64.
