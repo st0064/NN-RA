@@ -1,21 +1,15 @@
-# Feed-Forward Neural Network (FFNN) for Regression
+# Feed-Forward Neural Network (FFNN) for Rate Adaption 
 
 ## Introduction
-
-This is a very simple example showing how FFNN can be used for regression.
-In this example, the function to predict is 
-$$f(x_1,x_2) = x_2 sin(x_1) - x_1 cos(x_2)$$ 
-where $x_1$ and $x_2$ are two inputs between -5.0 and 5.0. 
-The following is the plot of the function:
-
-![Plot](https://gitlab.surrey.ac.uk/cf0014/ffnn/-/raw/main/sample_plot.png)
-
+We have trained the NN model based on the MU-MIMO simulator to predict the effective rate according to CSIs values. The scenario is based on 4 UE and trained 28 models per UE.
 
 ## The dataset
 
-The dataset is already given in `sample_data.csv`. It's ready to use. The csv file will be loaded in the program for training and testing.
+The data set of per UE MCS wise is already given. For UE1 total 28 MCS data set are provided and name of files are: 1_MCS.csv,2_MCS.csv, 3_MCS.csv,.......,28_MCS.csv.
+For UE2, 28 MCS data set provided and names are: 1_MCS_UE2, 2_MCS_UE2, 3_MCS_UE2, .........., 28_MCS_UE2
 
-You can also regenerate a new set of dataset by using `sample_generator.xlsx`. You can simply open and touch the file to generate new random inputs in the spreadsheet, then save the file as `sample_data.csv`. 
+The data sets are ready to use. The csv file will be loaded in the program for training and testing.
+
 
 ## Setup environment
 
@@ -39,34 +33,31 @@ Run the code using the following command. By default, the program will read the 
 ```
 python ffnn.py
 ```
+The program has 3 run modes:
+    mode 1: train & save the model into a folder
+    mode 2: train the model but don't save it
+    mode 3: (default) load the saved model from the folder
 
-## FFNN Design
+The model name UE and MCS wise are already trained and provided. The trained model names for UE1 MCS wise are:1_model, 2_model, 3_model,...........,28_model
+The trained model names for UE2 MCS wise are:1_model_UE2, 2_model_UE2, 3_model_UE2,...........,28_model_UE2
 
-The following is the default FFNN design in the code:
+You can upload the model in the program and test the model with your data set. You can also re-train the model. To use the available model just set the below line in the ffnn.py (for example to use UE1 for MCS27 27_model) :
+Line 21: to_train = False # don't re-train, use the saved model
+Line 22: #to_train = True # train the model again 
+Line 40: model = load_model('27_model') # load the model from the given folder
 
-```python
-    model = Sequential()
-    model.add(Dense(units=6, activation='relu', input_dim=len(X_train.columns)))
-    model.add(Dense(units=12, activation='tanh'))
-    model.add(Dense(units=1))
-    model.compile(loss='mean_squared_error', optimizer='sgd')
-    model.fit(X_train, y_train, batch_size=50, epochs=200)
-```
+## Test the model for unkown input for each MCS
+You can test the individual model for unknown CSI. For this, the CSI information is already given in the program. for UE1 MCS27 the test data is:
 
-We have 5000 instances in our dataset, 80% (or 4000) are used for training. Since each batch size is 50, the FFNN will be updated 80 times for each epoch. The final few epochs show:
+test_data_27 = [333.804, -6.844, 279.694, -5.928, 278.983, -5.378, 279.736, -5.775, 279.396, -5.938, 281.006, -7.159, 280.36, -6.508, 280.37, -6.1, 279.431, -6.948, 279.886, -6.126, 385.678, -6.494, 355.335, -6.159, 355.107, -5.67, 354.769, -6.049, 354.718, -6.05, 356.267, -6.83, 355.849, -6.267, 354.985, -5.656, 354.566, -6.131, 355.128, -5.95, 659.8, -5.62, 635.616, -5.623, 633.958, -6.875, 635.382, -6.263, 634.566, -6.571, 635.057, -5.867, 635.147, -5.866, 635.68, -6.201, 633.101, -5.99, 634.328, -7.234, 385.21, -5.519, 355.791, -5.847, 354.511, -6.245, 355.218, -6.635, 354.606, -6.485, 355.416, -6.049, 355.296, -6.188, 355.276, -5.946, 353.031, -5.335, 354.573, -6.523]
 
-```
-...
-Epoch 197/200
-80/80 [==============================] - 0s 657us/step - loss: 0.2446
-Epoch 198/200
-80/80 [==============================] - 0s 646us/step - loss: 0.2423
-Epoch 199/200
-80/80 [==============================] - 0s 624us/step - loss: 0.2428
-Epoch 200/200
-80/80 [==============================] - 0s 639us/step - loss: 0.2383
-```
+Similarly, for UE2 MCS28 you can use test_data_28_UE2.
 
-![Plot](https://gitlab.surrey.ac.uk/cf0014/ffnn/-/raw/main/ffnn.png)
+Use the function to make predictions. For UE1 MCS27 use- 
+    predicted_output = function_to_predict(test_data_27)
 
-# NN-RA
+The function will predict the effective rate based on the trained 27_MCS model.
+
+To check the accuracy we already provided the actual effective rate for the test_data_27. Now, you can compare the predicted effective rate and actual effective rate to validate the model. 
+
+print("Actual value MCS 27: 5040.64")
