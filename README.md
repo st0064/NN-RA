@@ -69,3 +69,4 @@ Epoch 200/200
 
 ![Plot](https://gitlab.surrey.ac.uk/cf0014/ffnn/-/raw/main/ffnn.png)
 
+# NN-RA
