@@ -33,6 +33,7 @@ Run the code using the following command. By default, the program will read the 
 python ffnn.py
 ```
 The program has 3 run modes:
+
     mode 1: train & save the model into a folder
     mode 2: train the model but don't save it
     mode 3: (default) load the saved model from the folder
