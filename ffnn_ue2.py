@@ -5,66 +5,93 @@ from sklearn.model_selection import train_test_split
 from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.layers import Dense
 import tensorflow as tf
+import random
 
+# Server code to read data from Client C program
+import socket
+import struct
+
+#HOST = '131.227.60.141'  # localhost
+HOST = '127.0.0.1'  # localhost
+PORT = 65431        # Port to listen on
+
+# Create a socket object
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+    s.bind((HOST, PORT))
+    s.listen()
+
+    print(f"Server listening on {HOST}:{PORT}")
+    while True:
+        conn, addr = s.accept()
+        print('Connected by', addr)
+
+        with conn:
+            while True:
+                data = conn.recv(1024).decode()  # Receive data from the C program, Assuming an integer is 4 bytes (32 bits)
+                if not data:
+                    break
+                received_values_26 = list(map(float, data.split()))
+            # received_int = struct.unpack('!i', data)[0]  # Convert bytes to integer
+                print("Received CSI values from ORAN:", received_values_26) 
 # Load your dataset 'sample_data.csv'
-df = pd.read_csv("21_MCS.csv")
-df = df.dropna()          #removes any rows containing missing values
-X = df.drop('y', axis=1)  # We have 80 input columns, considering all except y column
-y = df['y']  # Here "y" is target variable
+                df = pd.read_csv("28_MCS_UE2.csv")
+                df = df.dropna()          #removes any rows containing missing values
+                X = df.drop('y', axis=1)  # We have 80 input columns, considering all except y column
+                y = df['y']  # Here "y" is target variable
 
-print("Shape of X:", X.shape)  # This will print the rows and columns which has a shape of 610 rows and 80 columns.
-print("Shape of y:", y.shape)  # This will print the columns variable (target variable) which has a shape of 29 rows and 1 column
+                print("Shape of X:", X.shape)  # This will print the rows and columns which has a shape of 610 rows and 80 columns.
+                print("Shape of y:", y.shape)  # This will print the columns variable (target variable) which has a shape of 29 rows and 1 column
 
-# Split the dataset into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+            # Split the dataset into training and testing sets
+                X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-to_train = False # don't re-train, use the saved model
-#to_train = True # train the model again
-if to_train:
-# Define the neural network model
-    model = Sequential()
-    model.add(Dense(units=64, activation='relu', input_dim=80))  # Adjust input_dim to match the number of input features (80)
-    model.add(Dense(units=128, activation='tanh'))
-    model.add(Dense(units=256, activation='tanh'))
-    model.add(Dense(units=512, activation='relu'))
-    model.add(Dense(units=256, activation='relu'))
-    model.add(Dense(units=64, activation='relu'))
-    model.add(Dense(units=8, activation='relu'))
-    model.add(Dense(units=1)) # Output layer for regression
-    model.compile(loss='mean_squared_error', optimizer='adam')           
+                to_train = False # don't re-train, use the saved model
+            #to_train = True # train the model again
+                if to_train:
+            # Define the neural network model
+                    model = Sequential()
+                    model.add(Dense(units=64, activation='relu', input_dim=80))  # Adjust input_dim to match the number of input features (80)
+                    model.add(Dense(units=128, activation='tanh'))
+                    model.add(Dense(units=256, activation='tanh'))
+                    model.add(Dense(units=512, activation='relu'))
+                    model.add(Dense(units=256, activation='relu'))
+                    model.add(Dense(units=64, activation='relu'))
+                    model.add(Dense(units=8, activation='relu'))
+                    model.add(Dense(units=1)) # Output layer for regression
+                    model.compile(loss='mean_squared_error', optimizer='adam')           
 
-# Train the model (you can adjust batch size and epochs as needed)
-    model.fit(X_train, y_train, batch_size=2, epochs=100, verbose=1, validation_data=(X_test, y_test), shuffle=True)
-    model.save('21_model')
-else:
-    model = load_model('21_model') # load the model from the given folder
-    
-# Function to predict 'y' based on input 'x' using the trained model
-def function_to_predict(x):
-    # Reshape 'x' to match the input shape of the model (80 input features)
-    x = np.array(x).reshape(1, -1)
-    print(x)
-    # Predict 'y' using the model
+            # Train the model (you can adjust batch size and epochs as needed)
+                    model.fit(X_train, y_train, batch_size=2, epochs=100, verbose=1, validation_data=(X_test, y_test), shuffle=True)
+                    model.save('28_model_UE2')
+                else:
+                    model = load_model('28_model_UE2') # load the model from the given folder
+                
+            # Function to predict 'y' based on input 'x' using the trained model
+                def function_to_predict(x):
+                # Reshape 'x' to match the input shape of the model (80 input features)
+                    x = np.array(x).reshape(1, -1)
+                    print(x)
+                # Predict 'y' using the model
 
-    y_pred = model.predict(x)[0][0]            #used to extract a specific value from the prediction
-    print(f"Predicted value: {y_pred:.2f}")
-    return y_pred   
+                    y_pred = model.predict(x)[0][0]            #used to extract a specific value from the prediction
+                    print(f"Predicted value: {y_pred:.2f}")
+                    return y_pred   
 
-# Generate random input data and make predictions 
-x_hat = []
-y_true = []
+            # Generate random input data and make predictions 
+                x_hat = []
+                y_true = []
 
-for _ in range(10):
-    x = [random.uniform(-10.0, 700.0) for _ in range(80)]  # Generate random input within the specified range
-    x_hat.append(x)
-    y_true.append(function_to_predict(x))
+                for _ in range(1):
+                    x = [random.uniform(-10.0, 700.0) for _ in range(80)]  # Generate random input within the specified range
+                    x_hat.append(x)
+                    y_true.append(function_to_predict(x))
 
-# Predict 'y' using the model
-y_hat = [function_to_predict(x) for x in x_hat]
+            # Predict 'y' using the model
+                y_hat = [function_to_predict(x) for x in x_hat]
 
-# Print the results in
-for i in range(len(y_true)):
-    print(f"Predicted = {y_hat[i]:.2f}; Actual = {y_true[i]:.2f}; Diff. = {y_true[i] - y_hat[i]:.2f}")
+            # Print the results in
+                for i in range(len(y_true)):
+                    print(f"Predicted value  UE2 28 = {y_hat[i]:.2f}; Actual value UE2 26 = {y_true[i]:.2f}; Diff. UE2 28 = {y_true[i] - y_hat[i]:.2f}")
 
 # Test unkown input data for each MCS. 
 #test_data_28 = [333.798, -7.281, 279.751, -5.922, 279.009, -5.319, 279.69, -5.696, 279.258, -6.116, 280.906, -7.358, 280.341, -6.111, 280.305, -5.928, 79.464, -6.726, 279.979, -6.333, 385.5, -6.423, 355.485, -5.973, 355.015, -5.552, 354.803, -5.946, 354.738, -5.976, 356.267, -6.862, 355.795, -6.133, 355.163, -5.796, 354.375, -6.126, 355.238, -6.237, 659.789, -5.863, 635.389, -5.65, 633.901, -6.799, 635.842, -6.486, 634.532, -6.513, 635.363, -5.927, 635.397, -5.96, 636.174, -6.188, 632.945, -6.146, 634.674, -7.237, 385.206, -5.551, 355.338, -6.073, 354.633, -6.597, 355.079, -6.623, 354.639, -6.282, 355.532, -6.17, 355.196, -6.221, 354.936, -5.992, 353.071, -5.263, 354.971, -6.351] 
@@ -74,7 +101,8 @@ for i in range(len(y_true)):
 #test_data_24 = [333.982, -7.024, 279.417, -6.076, 278.968, -5.197, 280.102, -5.857, 279.392, -6.344, 280.768, -7.337, 280.268, -6.433, 280.254, -6.294, 279.315, -6.946, 279.904, -6.366, 385.695, -6.245, 355.391, -6.194, 355.131, -5.654, 355.136, -6.199, 354.438, -5.856, 356.247, -6.887, 355.632, -6.151, 355.016, -5.88, 354.367, -6.276, 355.244, -6.003, 659.782, -5.902, 635.769, -5.634, 633.881, -6.656, 635.576, -6.54, 634.607, -6.536, 635.189, -5.847, 635.509, -6.032, 635.85, -5.955, 633.075, -6.137, 634.529, -7.033, 385.446, -5.514, 355.502, -6.006, 354.398, -6.587, 355.336, -6.5, 354.399, -6.468, 355.461, -6.085, 355.102, -6.257, 355.223, -5.733, 353.27, -5.473, 354.818, -6.312] 
 #test_data_23 = [333.696, -6.764, 279.766, -6.086, 278.952, -5.388, 279.884, -5.515, 279.318, -6.202, 280.749, -7.206, 280.435, -6.45, 280.26, -5.919, 279.441, -6.704, 279.961, -6.286, 385.545, -6.338, 355.445, -6.162, 354.831, -5.384, 354.919, -5.948, 354.474, -5.774, 356.34, -6.947, 355.701, -6.118, 354.916, -5.811, 354.506, -6.127, 355.036, -5.743, 659.808, -5.785, 635.91, -5.368, 634.042, -6.94, 635.48, -6.609, 634.7, -6.789, 635.229, -5.949, 635.413, -6.066, 635.924, -5.927, 633.015, -6.191, 634.379, -7.09, 385.463, -5.436, 355.645, -6.155, 354.51, -6.656, 355.031, -6.379, 354.68, -6.409, 355.729, -6.098, 355.276, -6.296, 355.069, -6.087, 353.287, -5.323, 354.62, -6.434] 
 #test_data_22 = [333.894, -7.058, 279.703, -6.254, 278.734, -4.796, 279.795, -5.741, 279.38, -5.912, 280.575, -7.151, 280.175, -6.252, 280.22, -6.021, 279.591, -6.719, 279.743, -6.166, 385.405, -6.253, 355.491, -5.823, 355.105, -5.551, 355.283, -6.205, 354.447, -5.798, 356.306, -6.942, 355.563, -6.186, 354.898, -5.811, 354.528, -6.058, 355.3, -6.318, 660.007, -5.888, 635.632, -5.756, 634.131, -6.727, 635.283, -6.388, 634.612, -6.678, 635.206, -5.853, 635.446, -5.739, 635.767, -5.907, 633.196, -6.151, 634.436, -7.264, 385.643, -5.418, 355.549, -5.871, 354.043, -6.497, 355.061, -6.632, 354.531, -6.406, 355.407, -6.013, 355.437, -5.987, 355.125, -6.035, 353.168, -5.198, 354.762, -6.253] 
-test_data_21 = [333.925, -6.893, 279.619, -5.863, 278.669, -5.332, 279.811, -5.84, 279.23, -6.062, 280.735, -7.162, 280.438, -6.456, 280.064, -5.945, 279.328, -6.607, 279.919, -6.281, 385.671, -6.396, 355.486, -5.926, 355.186, -5.478, 354.899, -6.249, 354.518, -5.91, 356.286, -7.04, 355.721, -6.073, 354.617, -5.798, 354.404, -6.047, 355.174, -6.184, 659.871, -6.058, 635.903, -5.724, 633.998, -6.74, 635.637, -6.593, 634.692, -6.689, 635.102, -5.885, 635.566, -5.951, 635.734, -6.336, 632.967, -6.239, 634.403, -7.117, 385.616, -5.414, 355.638, -6.003, 354.274, -6.584, 355.257, -6.594, 354.696, -6.263, 355.64, -5.758, 355.206, -6.103, 354.966, -5.681, 353.212, -5.363, 354.616, -6.108] 
+                    test_data_28 = received_values_26
+            #test_data_21 = [333.925, -6.893, 279.619, -5.863, 278.669, -5.332, 279.811, -5.84, 279.23, -6.062, 280.735, -7.162, 280.438, -6.456, 280.064, -5.945, 279.328, -6.607, 279.919, -6.281, 385.671, -6.396, 355.486, -5.926, 355.186, -5.478, 354.899, -6.249, 354.518, -5.91, 356.286, -7.04, 355.721, -6.073, 354.617, -5.798, 354.404, -6.047, 355.174, -6.184, 659.871, -6.058, 635.903, -5.724, 633.998, -6.74, 635.637, -6.593, 634.692, -6.689, 635.102, -5.885, 635.566, -5.951, 635.734, -6.336, 632.967, -6.239, 634.403, -7.117, 385.616, -5.414, 355.638, -6.003, 354.274, -6.584, 355.257, -6.594, 354.696, -6.263, 355.64, -5.758, 355.206, -6.103, 354.966, -5.681, 353.212, -5.363, 354.616, -6.108] 
 #test_data_20 = [334.195, -6.896, 279.728, -6.116, 278.953, -5.053, 280.02, -5.804, 279.279, -6.201, 280.974, -7.219, 280.339, -6.417, 280.153, -6.025, 279.536, -6.794, 279.802, -6.178, 385.72, -6.27, 355.35, -6.155, 354.736, -5.532, 354.901, -6.236, 354.758, -5.93, 356.371, -6.934, 355.709, -6.078, 354.926, -5.758, 354.668, -6.41, 355.245, -6.325, 660.006, -5.981, 635.747, -5.863, 633.941, -6.654, 635.755, -6.56, 634.585, -6.376, 635.11, -6.049, 635.331, -6.197, 635.87, -6.262, 632.989, -6.343, 634.485, -7.09, 385.608, -5.393, 355.569, -5.971, 354.506, -6.735, 355.284, -6.471, 354.473, -6.34, 355.482, -5.843, 355.24, -6.003, 355.08, -5.901, 353.256, -5.503, 354.601, -6.313] 
 #test_data_19 = [334.201, -7.029, 279.513, -6.138, 278.916, -5.065, 279.989, -5.741, 279.31, -6.281, 280.845, -7.532, 280.363, -6.229, 279.974, -5.984, 279.141, -6.44, 279.798, -6.259, 385.783, -6.343, 355.631, -5.759, 355.079, -5.517, 355.031, -6.088, 354.715, -5.78, 356.247, -6.895, 355.562, -5.901, 354.893, -5.59, 354.285, -6.155, 355.225, -6.077, 659.73, -5.641, 635.639, -5.732, 633.94, -6.758, 635.611, -6.565, 634.59, -6.516, 635.223, -5.893, 635.059, -6.099, 635.934, -6.222, 633.08, -6.284, 634.302, -7.149, 385.383, -5.797, 355.453, -6.092, 354.371, -6.449, 355.286, -6.264, 354.608, -6.388, 355.457, -5.927, 355.251, -5.982, 354.879, -5.616, 353.299, -5.25, 354.42, -6.19] 
 #test_data_18 = [333.996, -6.945, 279.69, -6.006, 279.114, -5.038, 279.699, -5.961, 279.157, -5.947, 280.76, -7.413, 280.342, -6.547, 279.907, -6.22, 279.416, -6.84, 279.732, -6.098, 385.603, -6.551, 355.578, -5.869, 355.113, -5.651, 355.187, -5.925, 354.557, -6.043, 356.154, -6.896, 355.574, -6.263, 354.964, -5.884, 354.178, -6.128, 355.106, -6.067, 659.854, -5.912, 635.835, -5.738, 634.022, -6.678, 635.456, -6.47, 634.795, -6.691, 635.286, -5.989, 635.498, -6.21, 635.604, -6.452, 633.26, -6.171, 634.336, -7.126, 385.352, -5.483, 355.675, -6.012, 354.477, -6.572, 355.216, -6.639, 354.385, -6.434, 355.177, -6.001, 355.266, -5.939, 355.054, -5.849, 353.063, -5.441, 354.711, -6.212] 
@@ -122,7 +150,8 @@ test_data_21 = [333.925, -6.893, 279.619, -5.863, 278.669, -5.332, 279.811, -5.8
 #test_data_4_UE2 = [333.766, -6.819, 279.768, -6.095, 279.049, -5.273, 279.697, -5.567, 279.45, -6.395, 280.983, -7.297, 280.589, -6.23, 280.059, -5.855, 279.532, -6.676, 279.724, -6.269, 385.803, -6.372, 355.476, -6.04, 354.948, -5.616, 354.828, -6.076, 354.655, -6.208, 356.438, -6.97, 355.747, -6.145, 354.874, -5.707, 354.169, -6.3, 354.988, -5.861, 659.792, -5.783, 635.99, -5.943, 634.101, -6.659, 635.668, -6.407, 634.628, -6.749, 635.217, -6.05, 635.163, -5.941, 635.94, -6.307, 633.039, -6.204, 634.215, -7.269, 385.214, -5.576, 355.695, -6.116, 354.374, -6.284, 355.101, -6.908, 354.548, -6.609, 355.513, -6.054, 355.444, -6.074, 355.165, -5.719, 353.268, -5.557, 354.606, -6.051]
 
 # Use the function to make predictions
-predicted_output = function_to_predict(test_data_21)
+                    predicted_output_28 = function_to_predict(test_data_28)
+                    myvalue_28 = round(predicted_output_28)
 #predicted_output = function_to_predict(test_data_26)
 #predicted_output = function_to_predict(test_data_28)
 #predicted_output = function_to_predict(test_data_25)
@@ -158,14 +187,14 @@ predicted_output = function_to_predict(test_data_21)
 
 # Print the predicted output
 #print(f"Predicted Output: {predicted_output:.2f}")
-#print("Actual value MCS 28: 612.864")
+                    print("Actual value MCS 28: 612.864")
 #print("Actual value MCS 27: 5040.64")
-#print("Actual value MCS 26: 6512.64")
+                    #print("Actual value 26: 6512.64")
 #print("Actual value MCS 25: 6272")
 #print("Actual value MCS 24: 5888")
 #print("Actual value MCS 23: 5504")
 #print("Actual value MCS 22: 5120")
-print("Actual value MCS 21: 4736")
+                    #print("Actual value MCS 21: 4736")
 #print("Actual value MCS 20: 4352")
 #print("Actual value MCS 19: 3968")
 #print("Actual value MCS 18: 3624")
@@ -214,3 +243,480 @@ print("Actual value MCS 21: 4736")
 #print("Actual value MCS 3 UE2: ")
 #print("Actual value MCS 2 UE2: ")
 #print("Actual value MCS 1 UE2; ")
+                    
+                    print ("Response 28 Send to xApp:", myvalue_28)  
+
+# Load your dataset 'sample_data.csv'
+                df = pd.read_csv("27_MCS_UE2.csv")
+                df = df.dropna()          #removes any rows containing missing values
+                X = df.drop('y', axis=1)  # We have 80 input columns, considering all except y column
+                y = df['y']  # Here "y" is target variable
+
+                print("Shape of X:", X.shape)  # This will print the rows and columns which has a shape of 610 rows and 80 columns.
+                print("Shape of y:", y.shape)  # This will print the columns variable (target variable) which has a shape of 29 rows and 1 column
+
+            # Split the dataset into training and testing sets
+                X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+                to_train = False # don't re-train, use the saved model
+            #to_train = True # train the model again
+                if to_train:
+            # Define the neural network model
+                    model = Sequential()
+                    model.add(Dense(units=64, activation='relu', input_dim=80))  # Adjust input_dim to match the number of input features (80)
+                    model.add(Dense(units=128, activation='tanh'))
+                    model.add(Dense(units=256, activation='tanh'))
+                    model.add(Dense(units=512, activation='relu'))
+                    model.add(Dense(units=256, activation='relu'))
+                    model.add(Dense(units=64, activation='relu'))
+                    model.add(Dense(units=8, activation='relu'))
+                    model.add(Dense(units=1)) # Output layer for regression
+                    model.compile(loss='mean_squared_error', optimizer='adam')           
+
+            # Train the model (you can adjust batch size and epochs as needed)
+                    model.fit(X_train, y_train, batch_size=2, epochs=100, verbose=1, validation_data=(X_test, y_test), shuffle=True)
+                    model.save('27_model_UE2')
+                else:
+                    model = load_model('27_model_UE2') # load the model from the given folder
+                
+            # Function to predict 'y' based on input 'x' using the trained model
+                def function_to_predict(x):
+                # Reshape 'x' to match the input shape of the model (80 input features)
+                    x = np.array(x).reshape(1, -1)
+                    print(x)
+                # Predict 'y' using the model
+
+                    y_pred = model.predict(x)[0][0]            #used to extract a specific value from the prediction
+                    print(f"Predicted value: {y_pred:.2f}")
+                    return y_pred   
+
+            # Generate random input data and make predictions 
+                x_hat = []
+                y_true = []
+
+                for _ in range(1):
+                    x = [random.uniform(-10.0, 700.0) for _ in range(80)]  # Generate random input within the specified range
+                    x_hat.append(x)
+                    y_true.append(function_to_predict(x))
+
+            # Predict 'y' using the model
+                y_hat = [function_to_predict(x) for x in x_hat]
+
+            # Print the results in
+                for i in range(len(y_true)):
+                    print(f"Predicted 7 = {y_hat[i]:.2f}; Actual 7 = {y_true[i]:.2f}; Diff. 7 = {y_true[i] - y_hat[i]:.2f}")
+
+                    test_data_27 = received_values_26
+                    predicted_output_27 = function_to_predict(test_data_27)
+                    myvalue_27 = round(predicted_output_27)
+
+# Load your dataset 'sample_data.csv'
+                df = pd.read_csv("26_MCS_UE2.csv")
+                df = df.dropna()          #removes any rows containing missing values
+                X = df.drop('y', axis=1)  # We have 80 input columns, considering all except y column
+                y = df['y']  # Here "y" is target variable
+
+                print("Shape of X:", X.shape)  # This will print the rows and columns which has a shape of 610 rows and 80 columns.
+                print("Shape of y:", y.shape)  # This will print the columns variable (target variable) which has a shape of 29 rows and 1 column
+
+            # Split the dataset into training and testing sets
+                X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+                to_train = False # don't re-train, use the saved model
+            #to_train = True # train the model again
+                if to_train:
+            # Define the neural network model
+                    model = Sequential()
+                    model.add(Dense(units=64, activation='relu', input_dim=80))  # Adjust input_dim to match the number of input features (80)
+                    model.add(Dense(units=128, activation='tanh'))
+                    model.add(Dense(units=256, activation='tanh'))
+                    model.add(Dense(units=512, activation='relu'))
+                    model.add(Dense(units=256, activation='relu'))
+                    model.add(Dense(units=64, activation='relu'))
+                    model.add(Dense(units=8, activation='relu'))
+                    model.add(Dense(units=1)) # Output layer for regression
+                    model.compile(loss='mean_squared_error', optimizer='adam')           
+
+            # Train the model (you can adjust batch size and epochs as needed)
+                    model.fit(X_train, y_train, batch_size=2, epochs=100, verbose=1, validation_data=(X_test, y_test), shuffle=True)
+                    model.save('26_model_UE2')
+                else:
+                    model = load_model('26_model_UE2') # load the model from the given folder
+                
+            # Function to predict 'y' based on input 'x' using the trained model
+                def function_to_predict(x):
+                # Reshape 'x' to match the input shape of the model (80 input features)
+                    x = np.array(x).reshape(1, -1)
+                    print(x)
+                # Predict 'y' using the model
+
+                    y_pred = model.predict(x)[0][0]            #used to extract a specific value from the prediction
+                    print(f"Predicted value: {y_pred:.2f}")
+                    return y_pred   
+
+            # Generate random input data and make predictions 
+                x_hat = []
+                y_true = []
+
+                for _ in range(1):
+                    x = [random.uniform(-10.0, 700.0) for _ in range(80)]  # Generate random input within the specified range
+                    x_hat.append(x)
+                    y_true.append(function_to_predict(x))
+
+            # Predict 'y' using the model
+                y_hat = [function_to_predict(x) for x in x_hat]
+
+            # Print the results in
+                for i in range(len(y_true)):
+                    print(f"Predicted 26 = {y_hat[i]:.2f}; Actual 26 = {y_true[i]:.2f}; Diff. 26 = {y_true[i] - y_hat[i]:.2f}")
+
+                    test_data_26 = received_values_26
+                    predicted_output_26 = function_to_predict(test_data_26)
+                    myvalue_26 = round(predicted_output_26)
+
+# Load your dataset 'sample_data.csv'
+                df = pd.read_csv("25_MCS_UE2.csv")
+                df = df.dropna()          #removes any rows containing missing values
+                X = df.drop('y', axis=1)  # We have 80 input columns, considering all except y column
+                y = df['y']  # Here "y" is target variable
+
+                print("Shape of X:", X.shape)  # This will print the rows and columns which has a shape of 610 rows and 80 columns.
+                print("Shape of y:", y.shape)  # This will print the columns variable (target variable) which has a shape of 29 rows and 1 column
+
+            # Split the dataset into training and testing sets
+                X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+                to_train = False # don't re-train, use the saved model
+            #to_train = True # train the model again
+                if to_train:
+            # Define the neural network model
+                    model = Sequential()
+                    model.add(Dense(units=64, activation='relu', input_dim=80))  # Adjust input_dim to match the number of input features (80)
+                    model.add(Dense(units=128, activation='tanh'))
+                    model.add(Dense(units=256, activation='tanh'))
+                    model.add(Dense(units=512, activation='relu'))
+                    model.add(Dense(units=256, activation='relu'))
+                    model.add(Dense(units=64, activation='relu'))
+                    model.add(Dense(units=8, activation='relu'))
+                    model.add(Dense(units=1)) # Output layer for regression
+                    model.compile(loss='mean_squared_error', optimizer='adam')           
+
+            # Train the model (you can adjust batch size and epochs as needed)
+                    model.fit(X_train, y_train, batch_size=2, epochs=100, verbose=1, validation_data=(X_test, y_test), shuffle=True)
+                    model.save('25_model_UE2')
+                else:
+                    model = load_model('25_model_UE2') # load the model from the given folder
+                
+            # Function to predict 'y' based on input 'x' using the trained model
+                def function_to_predict(x):
+                # Reshape 'x' to match the input shape of the model (80 input features)
+                    x = np.array(x).reshape(1, -1)
+                    print(x)
+                # Predict 'y' using the model
+
+                    y_pred = model.predict(x)[0][0]            #used to extract a specific value from the prediction
+                    print(f"Predicted value: {y_pred:.2f}")
+                    return y_pred   
+
+            # Generate random input data and make predictions 
+                x_hat = []
+                y_true = []
+
+                for _ in range(1):
+                    x = [random.uniform(-10.0, 700.0) for _ in range(80)]  # Generate random input within the specified range
+                    x_hat.append(x)
+                    y_true.append(function_to_predict(x))
+
+            # Predict 'y' using the model
+                y_hat = [function_to_predict(x) for x in x_hat]
+
+            # Print the results in
+                for i in range(len(y_true)):
+                    print(f"Predicted 25 = {y_hat[i]:.2f}; Actual 7 = {y_true[i]:.2f}; Diff. 7 = {y_true[i] - y_hat[i]:.2f}")
+
+                    test_data_25 = received_values_26
+                    predicted_output_25 = function_to_predict(test_data_25)
+                    myvalue_25 = round(predicted_output_25)
+
+# Load your dataset 'sample_data.csv'
+                df = pd.read_csv("24_MCS_UE2.csv")
+                df = df.dropna()          #removes any rows containing missing values
+                X = df.drop('y', axis=1)  # We have 80 input columns, considering all except y column
+                y = df['y']  # Here "y" is target variable
+
+                print("Shape of X:", X.shape)  # This will print the rows and columns which has a shape of 610 rows and 80 columns.
+                print("Shape of y:", y.shape)  # This will print the columns variable (target variable) which has a shape of 29 rows and 1 column
+
+            # Split the dataset into training and testing sets
+                X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+                to_train = False # don't re-train, use the saved model
+            #to_train = True # train the model again
+                if to_train:
+            # Define the neural network model
+                    model = Sequential()
+                    model.add(Dense(units=64, activation='relu', input_dim=80))  # Adjust input_dim to match the number of input features (80)
+                    model.add(Dense(units=128, activation='tanh'))
+                    model.add(Dense(units=256, activation='tanh'))
+                    model.add(Dense(units=512, activation='relu'))
+                    model.add(Dense(units=256, activation='relu'))
+                    model.add(Dense(units=64, activation='relu'))
+                    model.add(Dense(units=8, activation='relu'))
+                    model.add(Dense(units=1)) # Output layer for regression
+                    model.compile(loss='mean_squared_error', optimizer='adam')           
+
+            # Train the model (you can adjust batch size and epochs as needed)
+                    model.fit(X_train, y_train, batch_size=2, epochs=100, verbose=1, validation_data=(X_test, y_test), shuffle=True)
+                    model.save('24_model_UE2')
+                else:
+                    model = load_model('24_model_UE2') # load the model from the given folder
+                
+            # Function to predict 'y' based on input 'x' using the trained model
+                def function_to_predict(x):
+                # Reshape 'x' to match the input shape of the model (80 input features)
+                    x = np.array(x).reshape(1, -1)
+                    print(x)
+                # Predict 'y' using the model
+
+                    y_pred = model.predict(x)[0][0]            #used to extract a specific value from the prediction
+                    print(f"Predicted value: {y_pred:.2f}")
+                    return y_pred   
+
+            # Generate random input data and make predictions 
+                x_hat = []
+                y_true = []
+
+                for _ in range(1):
+                    x = [random.uniform(-10.0, 700.0) for _ in range(80)]  # Generate random input within the specified range
+                    x_hat.append(x)
+                    y_true.append(function_to_predict(x))
+
+            # Predict 'y' using the model
+                y_hat = [function_to_predict(x) for x in x_hat]
+
+            # Print the results in
+                for i in range(len(y_true)):
+                    print(f"Predicted 24 = {y_hat[i]:.2f}; Actual 24 = {y_true[i]:.2f}; Diff. 24 = {y_true[i] - y_hat[i]:.2f}")
+
+                    test_data_24 = received_values_26
+                    predicted_output_24 = function_to_predict(test_data_24)
+                    myvalue_24 = round(predicted_output_24)
+
+# Load your dataset 'sample_data.csv'
+                df = pd.read_csv("23_MCS_UE2.csv")
+                df = df.dropna()          #removes any rows containing missing values
+                X = df.drop('y', axis=1)  # We have 80 input columns, considering all except y column
+                y = df['y']  # Here "y" is target variable
+
+                print("Shape of X:", X.shape)  # This will print the rows and columns which has a shape of 610 rows and 80 columns.
+                print("Shape of y:", y.shape)  # This will print the columns variable (target variable) which has a shape of 29 rows and 1 column
+
+            # Split the dataset into training and testing sets
+                X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+                to_train = False # don't re-train, use the saved model
+            #to_train = True # train the model again
+                if to_train:
+            # Define the neural network model
+                    model = Sequential()
+                    model.add(Dense(units=64, activation='relu', input_dim=80))  # Adjust input_dim to match the number of input features (80)
+                    model.add(Dense(units=128, activation='tanh'))
+                    model.add(Dense(units=256, activation='tanh'))
+                    model.add(Dense(units=512, activation='relu'))
+                    model.add(Dense(units=256, activation='relu'))
+                    model.add(Dense(units=64, activation='relu'))
+                    model.add(Dense(units=8, activation='relu'))
+                    model.add(Dense(units=1)) # Output layer for regression
+                    model.compile(loss='mean_squared_error', optimizer='adam')           
+
+            # Train the model (you can adjust batch size and epochs as needed)
+                    model.fit(X_train, y_train, batch_size=2, epochs=100, verbose=1, validation_data=(X_test, y_test), shuffle=True)
+                    model.save('23_model_UE2')
+                else:
+                    model = load_model('23_model_UE2') # load the model from the given folder
+                
+            # Function to predict 'y' based on input 'x' using the trained model
+                def function_to_predict(x):
+                # Reshape 'x' to match the input shape of the model (80 input features)
+                    x = np.array(x).reshape(1, -1)
+                    print(x)
+                # Predict 'y' using the model
+
+                    y_pred = model.predict(x)[0][0]            #used to extract a specific value from the prediction
+                    print(f"Predicted value: {y_pred:.2f}")
+                    return y_pred   
+
+            # Generate random input data and make predictions 
+                x_hat = []
+                y_true = []
+
+                for _ in range(1):
+                    x = [random.uniform(-10.0, 700.0) for _ in range(80)]  # Generate random input within the specified range
+                    x_hat.append(x)
+                    y_true.append(function_to_predict(x))
+
+            # Predict 'y' using the model
+                y_hat = [function_to_predict(x) for x in x_hat]
+
+            # Print the results in
+                for i in range(len(y_true)):
+                    
+                    test_data_23 = received_values_26
+                    predicted_output_23 = function_to_predict(test_data_23)
+                    myvalue_23 = round(predicted_output_23)
+
+# Load your dataset 'sample_data.csv'
+                df = pd.read_csv("22_MCS_UE2.csv")
+                df = df.dropna()          #removes any rows containing missing values
+                X = df.drop('y', axis=1)  # We have 80 input columns, considering all except y column
+                y = df['y']  # Here "y" is target variable
+
+                print("Shape of X:", X.shape)  # This will print the rows and columns which has a shape of 610 rows and 80 columns.
+                print("Shape of y:", y.shape)  # This will print the columns variable (target variable) which has a shape of 29 rows and 1 column
+
+            # Split the dataset into training and testing sets
+                X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+                to_train = False # don't re-train, use the saved model
+            #to_train = True # train the model again
+                if to_train:
+            # Define the neural network model
+                    model = Sequential()
+                    model.add(Dense(units=64, activation='relu', input_dim=80))  # Adjust input_dim to match the number of input features (80)
+                    model.add(Dense(units=128, activation='tanh'))
+                    model.add(Dense(units=256, activation='tanh'))
+                    model.add(Dense(units=512, activation='relu'))
+                    model.add(Dense(units=256, activation='relu'))
+                    model.add(Dense(units=64, activation='relu'))
+                    model.add(Dense(units=8, activation='relu'))
+                    model.add(Dense(units=1)) # Output layer for regression
+                    model.compile(loss='mean_squared_error', optimizer='adam')           
+
+            # Train the model (you can adjust batch size and epochs as needed)
+                    model.fit(X_train, y_train, batch_size=2, epochs=100, verbose=1, validation_data=(X_test, y_test), shuffle=True)
+                    model.save('22_model_UE2')
+                else:
+                    model = load_model('22_model_UE2') # load the model from the given folder
+                
+            # Function to predict 'y' based on input 'x' using the trained model
+                def function_to_predict(x):
+                # Reshape 'x' to match the input shape of the model (80 input features)
+                    x = np.array(x).reshape(1, -1)
+                    print(x)
+                # Predict 'y' using the model
+
+                    y_pred = model.predict(x)[0][0]            #used to extract a specific value from the prediction
+                    print(f"Predicted value: {y_pred:.2f}")
+                    return y_pred   
+
+            # Generate random input data and make predictions 
+                x_hat = []
+                y_true = []
+
+                for _ in range(1):
+                    x = [random.uniform(-10.0, 700.0) for _ in range(80)]  # Generate random input within the specified range
+                    x_hat.append(x)
+                    y_true.append(function_to_predict(x))
+
+            # Predict 'y' using the model
+                y_hat = [function_to_predict(x) for x in x_hat]
+
+            # Print the results in
+                for i in range(len(y_true)):
+
+                    test_data_22 = received_values_26
+                    predicted_output_22 = function_to_predict(test_data_22)
+                    myvalue_22 = round(predicted_output_22)
+
+# Load your dataset 'sample_data.csv'
+                df = pd.read_csv("21_MCS_UE2.csv")
+                df = df.dropna()          #removes any rows containing missing values
+                X = df.drop('y', axis=1)  # We have 80 input columns, considering all except y column
+                y = df['y']  # Here "y" is target variable
+
+                print("Shape of X:", X.shape)  # This will print the rows and columns which has a shape of 610 rows and 80 columns.
+                print("Shape of y:", y.shape)  # This will print the columns variable (target variable) which has a shape of 29 rows and 1 column
+
+            # Split the dataset into training and testing sets
+                X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+                to_train = False # don't re-train, use the saved model
+            #to_train = True # train the model again
+                if to_train:
+            # Define the neural network model
+                    model = Sequential()
+                    model.add(Dense(units=64, activation='relu', input_dim=80))  # Adjust input_dim to match the number of input features (80)
+                    model.add(Dense(units=128, activation='tanh'))
+                    model.add(Dense(units=256, activation='tanh'))
+                    model.add(Dense(units=512, activation='relu'))
+                    model.add(Dense(units=256, activation='relu'))
+                    model.add(Dense(units=64, activation='relu'))
+                    model.add(Dense(units=8, activation='relu'))
+                    model.add(Dense(units=1)) # Output layer for regression
+                    model.compile(loss='mean_squared_error', optimizer='adam')           
+
+            # Train the model (you can adjust batch size and epochs as needed)
+                    model.fit(X_train, y_train, batch_size=2, epochs=100, verbose=1, validation_data=(X_test, y_test), shuffle=True)
+                    model.save('21_model_UE2')
+                else:
+                    model = load_model('21_model_UE2') # load the model from the given folder
+                
+            # Function to predict 'y' based on input 'x' using the trained model
+                def function_to_predict(x):
+                # Reshape 'x' to match the input shape of the model (80 input features)
+                    x = np.array(x).reshape(1, -1)
+                    print(x)
+                # Predict 'y' using the model
+
+                    y_pred = model.predict(x)[0][0]            #used to extract a specific value from the prediction
+                    print(f"Predicted value: {y_pred:.2f}")
+                    return y_pred   
+
+            # Generate random input data and make predictions 
+                x_hat = []
+                y_true = []
+
+                for _ in range(1):
+                    x = [random.uniform(-10.0, 700.0) for _ in range(80)]  # Generate random input within the specified range
+                    x_hat.append(x)
+                    y_true.append(function_to_predict(x))
+
+            # Predict 'y' using the model
+                y_hat = [function_to_predict(x) for x in x_hat]
+
+            # Print the results in
+                for i in range(len(y_true)):
+
+                    test_data_21 = received_values_26
+                    predicted_output_21 = function_to_predict(test_data_21)
+                    myvalue_21 = round(predicted_output_21)
+                    myvalue_20 = 4956
+                    myvalue_19 = 5040
+                    myvalue_18 = 4913
+                    myvalue_17 = 4970
+                    myvalue_16 = 5019
+                    myvalue_15 = 4998
+                    myvalue_14 = 5026
+                    myvalue_13 = 5216
+                    myvalue_12 = 5005
+                    myvalue_11 = 5108
+                    myvalue_10 = 4998
+                    myvalue_9 = 5270
+                    myvalue_8 = 5185
+                    myvalue_7 = 5140
+                    myvalue_6 = 5050
+                    myvalue_5 = 5167
+                    myvalue_4 = 5198
+                    myvalue_3 = 5270
+                    myvalue_2 = 5101
+                    myvalue_1 = 5217
+                    myvalue_0 = 5104
+
+                    values = [globals()[f"myvalue_{i}"] for i in range(0, 28)]
+                    random.shuffle(values)
+                    print("Predicted Effective Rates of UE2:", values)
+                    max_value = max(values)
+                    position = values.index(max_value)
+                    response1 = position
+                    print("Predicted and forwarded MCS to the xApp:", response1)
+                    conn.sendall(struct.pack('!i', response1))   # Send integer as 4 bytes
